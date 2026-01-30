@@ -1,5 +1,4 @@
-# 📊 Basic Feedback Summarizer (Generative AI)
-
+📊 Basic Feedback Summarizer (Generative AI)
 A **FastAPI-based backend service** that uses **Generative AI** to analyze customer feedback and convert it into **clear, actionable business insights**.
 
 This project demonstrates how **Generative AI can be integrated into backend APIs** to solve real-world business problems such as customer feedback analysis—without training any machine learning model.
