@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customer Feedback Summarizer</title>
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f1a2e;
+      --muted:#9fb0d0;
+      --text:#eaf0ff;
+      --border:rgba(255,255,255,.08);
+      --accent:#6ea8ff;
+      --accent2:#7c5cff;
+      --danger:#ff6b6b;
+      --success:#30d158;
+      --warning:#ffd60a;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius:16px;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 600px at 20% 10%, rgba(110,168,255,.18), transparent 60%),
+                  radial-gradient(900px 500px at 80% 0%, rgba(124,92,255,.16), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
+
+    .container{
+      max-width: 980px;
+      margin: 34px auto;
+      padding: 0 16px 40px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:18px;
+    }
+
+    .brand{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .brand h1{
+      margin:0;
+      font-size: 26px;
+      letter-spacing:.2px;
+    }
+    .brand p{
+      margin:0;
+      color:var(--muted);
+      font-size: 13px;
+    }
+
+    .pill{
+      font-size:12px;
+      padding: 7px 10px;
+      border:1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255,255,255,.03);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      white-space:nowrap;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(48,209,88,.15);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:16px;
+      align-items:start;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .card-header{
+      padding: 14px 16px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .card-header h2{
+      margin:0;
+      font-size: 14px;
+      letter-spacing:.4px;
+      text-transform:uppercase;
+      color: var(--muted);
+    }
+
+    .card-body{ padding: 16px; }
+
+    textarea{
+      width:100%;
+      min-height: 170px;
+      resize: vertical;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      outline:none;
+      color: var(--text);
+      background: rgba(0,0,0,.22);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    textarea:focus{
+      border-color: rgba(110,168,255,.6);
+      box-shadow: 0 0 0 4px rgba(110,168,255,.12);
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+      align-items:center;
+    }
+
+    button{
+      appearance:none;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      padding: 11px 14px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight:600;
+      transition: transform .06s ease, background .15s ease, border-color .15s ease;
+    }
+    button:hover{ background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.14); }
+    button:active{ transform: translateY(1px); }
+    button.primary{
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-color: transparent;
+    }
+    button.primary:hover{ filter: brightness(1.05); }
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
+
+    .helper{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top:10px;
+    }
+
+    .status{
+      margin-top:12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.18);
+      color: var(--muted);
+      font-size: 13px;
+      display:none;
+    }
+    .status.show{ display:block; }
+    .status.error{ color: #ffd3d3; border-color: rgba(255,107,107,.35); background: rgba(255,107,107,.08); }
+    .status.ok{ color: #d3ffe2; border-color: rgba(48,209,88,.35); background: rgba(48,209,88,.08); }
+
+    .result{
+      display:none;
+      margin-top: 12px;
+      gap: 12px;
+    }
+    .result.show{ display:grid; }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight:700;
+    }
+
+    .sentiment{
+      font-weight:800;
+      letter-spacing:.3px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      display:inline-flex;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+    }
+    .sentiment.positive{ color: #b7ffd1; border-color: rgba(48,209,88,.35); background: rgba(48,209,88,.10); }
+    .sentiment.neutral{ color: #fff2b0; border-color: rgba(255,214,10,.35); background: rgba(255,214,10,.10); }
+    .sentiment.negative{ color: #ffd3d3; border-color: rgba(255,107,107,.35); background: rgba(255,107,107,.10); }
+
+    .section{
+      border:1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: rgba(0,0,0,.18);
+    }
+    .section h3{
+      margin: 0 0 10px;
+      font-size: 13px;
+      text-transform:uppercase;
+      letter-spacing:.4px;
+      color: var(--muted);
+    }
+    .section p{ margin:0; color: var(--text); }
+    ul{
+      margin:0;
+      padding-left: 18px;
+      color: var(--text);
+    }
+    li{ margin: 6px 0; color: var(--text); }
+
+    .history-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top: 12px;
+    }
+    .history-card{
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.16);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .history-card .meta{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .history-card .fb{
+      color: var(--text);
+      margin: 0 0 8px;
+      font-size: 13px;
+      line-height: 1.35;
+      opacity:.95;
+    }
+    .history-card .sum{
+      margin:0;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.35;
+    }
+
+    .small{
+      font-size:12px;
+      color: var(--muted);
+    }
+
+    .loader{
+      width:16px;height:16px;
+      border-radius:50%;
+      border: 2px solid rgba(255,255,255,.25);
+      border-top-color: rgba(255,255,255,.85);
+      animation: spin .8s linear infinite;
+      display:none;
+    }
+    .loader.show{ display:inline-block; }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+
+    @media (max-width: 860px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <h1>Customer Feedback Summarizer</h1>
+        <p>Gemini AI + FastAPI + SQLite history</p>
+      </div>
+      <div class="pill">
+        <span class="dot"></span>
+        Backend: <span id="backendState">unknown</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT: Input + Result -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Analyze Feedback</h2>
+          <div class="badge">POST /summarize</div>
+        </div>
+        <div class="card-body">
+          <textarea id="feedback" placeholder="Paste customer feedback here..."></textarea>
+
+          <div class="actions">
+            <button class="primary" id="btnSummarize" onclick="summarize()">Summarize</button>
+            <button id="btnClear" onclick="clearAll()">Clear</button>
+            <span class="loader" id="loader"></span>
+            <span class="small" id="hint"></span>
+          </div>
+
+          <div id="status" class="status"></div>
+
+          <div id="result" class="result">
+            <div class="section">
+              <h3>Summary</h3>
+              <p id="rSummary">—</p>
+            </div>
+
+            <div class="section">
+              <h3>Sentiment</h3>
+              <span id="rSentiment" class="sentiment neutral">—</span>
+            </div>
+
+            <div class="section">
+              <h3>Key Issues</h3>
+              <ul id="rIssues"></ul>
+            </div>
+
+            <div class="section">
+              <h3>Actionable Suggestions</h3>
+              <ul id="rSuggestions"></ul>
+            </div>
+          </div>
+
+          <p class="helper">
+            Tip: Try long feedback (multi-line). After summarize, history auto-refresh ho jayegi.
+          </p>
+        </div>
+      </div>
+
+      <!-- RIGHT: History -->
+      <div class="card">
+        <div class="card-header">
+          <h2>History</h2>
+          <div class="badge">GET /history</div>
+        </div>
+        <div class="card-body">
+          <div class="actions" style="margin-top:0;">
+            <button id="btnHistory" onclick="loadHistory()">Load History</button>
+            <button onclick="toggleHistory()">Show/Hide</button>
+          </div>
+
+          <div id="historyWrap" style="margin-top:12px;">
+            <div id="historyStatus" class="status show">Click “Load History” to fetch last 10 items.</div>
+            <div id="history" class="history-list"></div>
+          </div>
+
+          <p class="helper">Shows last 10 requests saved in SQLite (feedback.db).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+
+    function setLoading(isLoading){
+      document.getElementById("btnSummarize").disabled = isLoading;
+      document.getElementById("btnHistory").disabled = isLoading;
+      document.getElementById("loader").classList.toggle("show", isLoading);
+      document.getElementById("hint").textContent = isLoading ? "Working..." : "";
+    }
+
+    function showStatus(msg, type=""){
+      const el = document.getElementById("status");
+      el.className = "status show" + (type ? (" " + type) : "");
+      el.textContent = msg;
+    }
+
+    function hideStatus(){
+      const el = document.getElementById("status");
+      el.className = "status";
+      el.textContent = "";
+    }
+
+    function sentimentClass(s){
+      const v = (s||"").toLowerCase();
+      if(v.includes("pos")) return "positive";
+      if(v.includes("neg")) return "negative";
+      return "neutral";
+    }
+
+    function renderList(elId, items){
+      const el = document.getElementById(elId);
+      el.innerHTML = (items || []).map(x => `<li>${escapeHtml(x)}</li>`).join("");
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function clearAll(){
+      document.getElementById("feedback").value = "";
+      hideStatus();
+      document.getElementById("result").classList.remove("show");
+      document.getElementById("rSummary").textContent = "—";
+      document.getElementById("rSentiment").textContent = "—";
+      document.getElementById("rSentiment").className = "sentiment neutral";
+      document.getElementById("rIssues").innerHTML = "";
+      document.getElementById("rSuggestions").innerHTML = "";
+    }
+
+    async function checkBackend(){
+      try{
+        const res = await fetch(`${API_BASE}/`);
+        if(!res.ok) throw new Error("bad");
+        document.getElementById("backendState").textContent = "online";
+      }catch(e){
+        document.getElementById("backendState").textContent = "offline";
+      }
+    }
+
+    async function summarize() {
+      const text = document.getElementById("feedback").value.trim();
+      if (!text) {
+        showStatus("Feedback likh bhai 😄", "error");
+        return;
+      }
+
+      hideStatus();
+      setLoading(true);
+
+      try{
+        const res = await fetch(`${API_BASE}/summarize`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+
+        if(!res.ok){
+          const errTxt = await res.text();
+          throw new Error(errTxt || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        const r = data.result || {};
+
+        document.getElementById("rSummary").textContent = r.summary || "—";
+
+        const s = r.sentiment || "Neutral";
+        const sEl = document.getElementById("rSentiment");
+        sEl.textContent = s;
+        sEl.className = "sentiment " + sentimentClass(s);
+
+        renderList("rIssues", r.key_issues || []);
+        renderList("rSuggestions", r.actionable_suggestions || []);
+
+        document.getElementById("result").classList.add("show");
+        showStatus("Done ✅ Saved to history.", "ok");
+
+        // Auto refresh history
+        await loadHistory(true);
+
+      }catch(e){
+        showStatus("Error: " + e.message, "error");
+      }finally{
+        setLoading(false);
+      }
+    }
+
+    async function loadHistory(silent=false){
+      const historyDiv = document.getElementById("history");
+      const hs = document.getElementById("historyStatus");
+
+      if(!silent){
+        hs.className = "status show";
+        hs.textContent = "Loading history...";
+      }
+
+      try{
+        const res = await fetch(`${API_BASE}/history?limit=10`);
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+
+        if(!data || data.length === 0){
+          hs.className = "status show";
+          hs.textContent = "No history yet. Summarize something first.";
+          historyDiv.innerHTML = "";
+          return;
+        }
+
+        hs.className = "status";
+        hs.textContent = "";
+
+        historyDiv.innerHTML = data.map(item => {
+          const sent = item?.result?.sentiment || "Neutral";
+          const cls = sentimentClass(sent);
+          return `
+            <div class="history-card">
+              <div class="meta">
+                <span><b>#${item.id}</b> · <span class="sentiment ${cls}">${escapeHtml(sent)}</span></span>
+                <span>${escapeHtml(item.created_at || "")}</span>
+              </div>
+              <p class="fb"><b>Feedback:</b> ${escapeHtml(item.feedback || "")}</p>
+              <p class="sum"><b>Summary:</b> ${escapeHtml(item?.result?.summary || "")}</p>
+            </div>
+          `;
+        }).join("");
+
+      }catch(e){
+        hs.className = "status show error";
+        hs.textContent = "History load failed: " + e.message;
+        historyDiv.innerHTML = "";
+      }
+    }
+
+    function toggleHistory(){
+      const wrap = document.getElementById("historyWrap");
+      wrap.style.display = (wrap.style.display === "none") ? "block" : "none";
+    }
+
+    // on load
+    checkBackend();
+  </script>
+</body>
+</html>
