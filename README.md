@@ -1,10 +1,3 @@
-Perfect bhai 👍
-Main tera **old README** ko **clean, professional, industry-ready English README** me convert kar raha hoon.
-👉 **Direct copy-paste** kar sakta hai GitHub ke `README.md` me.
-👉 Language simple + professional rakhi hai (recruiter-friendly).
-
----
-
 # 📊 Basic Feedback Summarizer (Generative AI)
 
 A **FastAPI-based backend service** that uses **Generative AI** to analyze customer feedback and convert it into **clear, actionable business insights**.
