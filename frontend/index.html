@@ -4,322 +4,637 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Customer Feedback Summarizer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    :root{
-      --bg:#0b1220;
-      --card:#0f1a2e;
-      --muted:#9fb0d0;
-      --text:#eaf0ff;
-      --border:rgba(255,255,255,.08);
-      --accent:#6ea8ff;
-      --accent2:#7c5cff;
-      --danger:#ff6b6b;
-      --success:#30d158;
-      --warning:#ffd60a;
-      --shadow: 0 12px 30px rgba(0,0,0,.35);
-      --radius:16px;
+    :root {
+      --bg: #060910;
+      --surface: #0d1117;
+      --surface2: #111820;
+      --surface3: #161e28;
+      --border: rgba(255,255,255,.07);
+      --border-hover: rgba(110,168,255,.3);
+      --text: #e8f0ff;
+      --muted: #6b82a0;
+      --muted2: #4a607a;
+      --accent: #5b9eff;
+      --accent2: #7c5cff;
+      --accent-glow: rgba(91,158,255,.18);
+      --danger: #ff5f5f;
+      --success: #2ecc71;
+      --warning: #f5c518;
+      --radius: 18px;
+      --radius-sm: 12px;
+      --shadow: 0 24px 64px rgba(0,0,0,.55);
     }
 
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: radial-gradient(1200px 600px at 20% 10%, rgba(110,168,255,.18), transparent 60%),
-                  radial-gradient(900px 500px at 80% 0%, rgba(124,92,255,.16), transparent 55%),
-                  var(--bg);
-      color:var(--text);
-      min-height:100vh;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
     }
 
-    .container{
-      max-width: 980px;
-      margin: 34px auto;
-      padding: 0 16px 40px;
+    /* ── Animated background ── */
+    .bg-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      animation: orbDrift 14s ease-in-out infinite alternate;
+      opacity: 0;
+      animation-fill-mode: forwards;
+    }
+    .bg-orb:nth-child(1) {
+      width: 700px; height: 500px;
+      background: radial-gradient(ellipse, rgba(91,158,255,.13), transparent 70%);
+      top: -150px; left: -120px;
+      animation-delay: 0s;
+    }
+    .bg-orb:nth-child(2) {
+      width: 550px; height: 550px;
+      background: radial-gradient(ellipse, rgba(124,92,255,.11), transparent 70%);
+      top: -80px; right: -100px;
+      animation-delay: -5s;
+      animation-duration: 18s;
+    }
+    .bg-orb:nth-child(3) {
+      width: 400px; height: 400px;
+      background: radial-gradient(ellipse, rgba(46,204,113,.07), transparent 70%);
+      bottom: 100px; left: 40%;
+      animation-delay: -8s;
+      animation-duration: 20s;
+    }
+    @keyframes orbDrift {
+      0%   { transform: translate(0,0) scale(1);   opacity: 1; }
+      50%  { transform: translate(30px,-20px) scale(1.06); }
+      100% { transform: translate(-20px,15px) scale(.96); opacity: 1; }
     }
 
-    .topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:18px;
+    /* Noise grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1;
+      opacity: .5;
     }
 
-    .brand{
-      display:flex;
-      flex-direction:column;
-      gap:4px;
+    /* ── Layout ── */
+    .container {
+      position: relative;
+      z-index: 2;
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 0 20px 60px;
     }
-    .brand h1{
-      margin:0;
-      font-size: 26px;
-      letter-spacing:.2px;
+
+    /* ── Header ── */
+    header {
+      padding: 44px 0 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      animation: fadeDown .6s ease both;
     }
-    .brand p{
-      margin:0;
-      color:var(--muted);
+
+    .brand { display: flex; flex-direction: column; gap: 6px; }
+
+    .brand-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--accent);
+      opacity: .85;
+    }
+    .brand-eyebrow span { width: 22px; height: 1px; background: var(--accent); display: inline-block; }
+
+    .brand h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(26px, 3.2vw, 38px);
+      font-weight: 400;
+      letter-spacing: -.3px;
+      line-height: 1.1;
+      color: var(--text);
+    }
+    .brand h1 em {
+      font-style: italic;
+      background: linear-gradient(110deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .brand p {
       font-size: 13px;
-    }
-
-    .pill{
-      font-size:12px;
-      padding: 7px 10px;
-      border:1px solid var(--border);
-      border-radius: 999px;
       color: var(--muted);
-      background: rgba(255,255,255,.03);
-      display:flex;
-      align-items:center;
-      gap:8px;
-      white-space:nowrap;
+      margin-top: 2px;
+      font-weight: 300;
     }
-    .dot{
-      width:8px;height:8px;border-radius:999px;
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      font-size: 12.5px;
+      color: var(--muted);
+      font-weight: 500;
+      white-space: nowrap;
+      backdrop-filter: blur(8px);
+      transition: border-color .3s;
+    }
+    .status-pill:hover { border-color: var(--border-hover); }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted2);
+      transition: background .4s, box-shadow .4s;
+    }
+    .status-dot.online {
       background: var(--success);
-      box-shadow: 0 0 0 4px rgba(48,209,88,.15);
+      box-shadow: 0 0 0 4px rgba(46,204,113,.18);
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    .status-dot.offline { background: var(--danger); }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(46,204,113,.15); }
+      50%       { box-shadow: 0 0 0 6px rgba(46,204,113,.06); }
     }
 
-    .grid{
-      display:grid;
-      grid-template-columns: 1.2fr .8fr;
-      gap:16px;
-      align-items:start;
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap: 16px;
+      align-items: start;
     }
 
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border:1px solid var(--border);
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      overflow:hidden;
+      overflow: hidden;
+      transition: border-color .3s;
+      animation: fadeUp .55s ease both;
     }
+    .card:hover { border-color: rgba(255,255,255,.11); }
+    .card:nth-child(2) { animation-delay: .08s; }
 
-    .card-header{
-      padding: 14px 16px;
-      border-bottom:1px solid var(--border);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, rgba(255,255,255,.025), transparent);
     }
-    .card-header h2{
-      margin:0;
-      font-size: 14px;
-      letter-spacing:.4px;
-      text-transform:uppercase;
+    .card-header-left { display: flex; align-items: center; gap: 10px; }
+    .card-icon {
+      width: 32px; height: 32px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, rgba(91,158,255,.18), rgba(124,92,255,.18));
+      border: 1px solid rgba(91,158,255,.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+    .card-header h2 {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .4px;
+      text-transform: uppercase;
       color: var(--muted);
     }
+    .endpoint-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: rgba(91,158,255,.08);
+      color: var(--accent);
+      font-family: 'Outfit', monospace;
+      letter-spacing: .3px;
+    }
+    .card-body { padding: 20px; }
 
-    .card-body{ padding: 16px; }
-
-    textarea{
-      width:100%;
-      min-height: 170px;
+    /* ── Textarea ── */
+    .textarea-wrap { position: relative; }
+    textarea {
+      width: 100%;
+      min-height: 178px;
       resize: vertical;
-      padding: 14px;
+      padding: 16px;
       border-radius: 14px;
       border: 1px solid var(--border);
-      outline:none;
+      outline: none;
       color: var(--text);
-      background: rgba(0,0,0,.22);
+      background: rgba(0,0,0,.28);
+      font-family: 'Outfit', sans-serif;
       font-size: 14px;
-      line-height: 1.45;
+      line-height: 1.6;
+      transition: border-color .25s, box-shadow .25s;
     }
-    textarea:focus{
-      border-color: rgba(110,168,255,.6);
-      box-shadow: 0 0 0 4px rgba(110,168,255,.12);
+    textarea::placeholder { color: var(--muted2); }
+    textarea:focus {
+      border-color: rgba(91,158,255,.55);
+      box-shadow: 0 0 0 4px rgba(91,158,255,.1), inset 0 0 0 1px rgba(91,158,255,.08);
+    }
+    .char-count {
+      position: absolute;
+      bottom: 10px; right: 12px;
+      font-size: 11px;
+      color: var(--muted2);
+      pointer-events: none;
+      transition: color .2s;
     }
 
-    .actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:12px;
-      align-items:center;
+    /* ── Actions ── */
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      align-items: center;
     }
 
-    button{
-      appearance:none;
-      border:1px solid var(--border);
-      background: rgba(255,255,255,.04);
+    button {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--surface2);
       color: var(--text);
+      padding: 11px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all .18s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    button::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background .18s;
+    }
+    button:hover { border-color: rgba(255,255,255,.14); background: var(--surface3); }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+
+    button.primary {
+      background: linear-gradient(110deg, var(--accent), var(--accent2));
+      border-color: transparent;
+      box-shadow: 0 4px 18px rgba(91,158,255,.25), 0 1px 3px rgba(0,0,0,.3);
+      color: #fff;
+    }
+    button.primary:hover {
+      filter: brightness(1.08);
+      box-shadow: 0 6px 24px rgba(91,158,255,.35);
+    }
+    button.primary:disabled { filter: none; box-shadow: none; }
+
+    /* ripple */
+    .ripple-effect {
+      position: absolute;
+      border-radius: 50%;
+      width: 80px; height: 80px;
+      background: rgba(255,255,255,.15);
+      transform: scale(0);
+      animation: ripple .5s linear;
+      pointer-events: none;
+    }
+    @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+
+    .loader {
+      width: 17px; height: 17px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.15);
+      border-top-color: rgba(255,255,255,.85);
+      animation: spin .75s linear infinite;
+      display: none;
+      flex-shrink: 0;
+    }
+    .loader.show { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hint-text {
+      font-size: 12.5px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    /* ── Status bar ── */
+    .status {
+      margin-top: 14px;
       padding: 11px 14px;
       border-radius: 12px;
-      cursor:pointer;
-      font-weight:600;
-      transition: transform .06s ease, background .15s ease, border-color .15s ease;
-    }
-    button:hover{ background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.14); }
-    button:active{ transform: translateY(1px); }
-    button.primary{
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      border-color: transparent;
-    }
-    button.primary:hover{ filter: brightness(1.05); }
-    button:disabled{
-      opacity:.55;
-      cursor:not-allowed;
-    }
-
-    .helper{
-      color: var(--muted);
-      font-size: 12px;
-      margin-top:10px;
-    }
-
-    .status{
-      margin-top:12px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border:1px solid var(--border);
-      background: rgba(0,0,0,.18);
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.2);
       color: var(--muted);
       font-size: 13px;
-      display:none;
+      display: none;
+      animation: fadeIn .25s ease;
     }
-    .status.show{ display:block; }
-    .status.error{ color: #ffd3d3; border-color: rgba(255,107,107,.35); background: rgba(255,107,107,.08); }
-    .status.ok{ color: #d3ffe2; border-color: rgba(48,209,88,.35); background: rgba(48,209,88,.08); }
+    .status.show { display: flex; align-items: center; gap: 8px; }
+    .status.error { color: #ffd0d0; border-color: rgba(255,95,95,.35); background: rgba(255,95,95,.07); }
+    .status.ok { color: #c8ffe0; border-color: rgba(46,204,113,.35); background: rgba(46,204,113,.07); }
+    .status-icon { font-size: 15px; flex-shrink: 0; }
 
-    .result{
-      display:none;
-      margin-top: 12px;
-      gap: 12px;
+    /* ── Results ── */
+    .result { display: none; margin-top: 16px; gap: 12px; }
+    .result.show { display: grid; animation: fadeUp .35s ease both; }
+
+    .section {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      background: rgba(0,0,0,.2);
+      transition: border-color .25s;
+      position: relative;
+      overflow: hidden;
     }
-    .result.show{ display:grid; }
+    .section::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(91,158,255,.2), transparent);
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .section:hover { border-color: rgba(255,255,255,.11); }
+    .section:hover::before { opacity: 1; }
 
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 6px 10px;
+    .section h3 {
+      margin: 0 0 10px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+    }
+    .section p { margin: 0; color: var(--text); font-size: 14px; line-height: 1.6; }
+
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: var(--text);
+    }
+    li {
+      margin: 7px 0;
+      color: var(--text);
+      font-size: 13.5px;
+      line-height: 1.5;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    li::before {
+      content: '';
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      margin-top: 6px;
+      opacity: .7;
+    }
+
+    /* ── Sentiment ── */
+    .sentiment {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: .3px;
+      padding: 7px 14px;
       border-radius: 999px;
-      border:1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--border);
       background: rgba(255,255,255,.03);
+      transition: all .3s;
+    }
+    .sentiment::before {
+      content: '';
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .sentiment.positive { color: #a8ffd0; border-color: rgba(46,204,113,.4); background: rgba(46,204,113,.09); }
+    .sentiment.positive::before { background: var(--success); box-shadow: 0 0 6px var(--success); }
+    .sentiment.neutral  { color: #fff0a8; border-color: rgba(245,197,24,.4); background: rgba(245,197,24,.09); }
+    .sentiment.neutral::before  { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+    .sentiment.negative { color: #ffd0d0; border-color: rgba(255,95,95,.4); background: rgba(255,95,95,.09); }
+    .sentiment.negative::before { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.025);
       color: var(--muted);
       font-size: 12px;
-      font-weight:700;
+      font-weight: 600;
     }
 
-    .sentiment{
-      font-weight:800;
-      letter-spacing:.3px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      display:inline-flex;
-      border:1px solid var(--border);
-      background: rgba(255,255,255,.03);
-    }
-    .sentiment.positive{ color: #b7ffd1; border-color: rgba(48,209,88,.35); background: rgba(48,209,88,.10); }
-    .sentiment.neutral{ color: #fff2b0; border-color: rgba(255,214,10,.35); background: rgba(255,214,10,.10); }
-    .sentiment.negative{ color: #ffd3d3; border-color: rgba(255,107,107,.35); background: rgba(255,107,107,.10); }
+    /* ── History ── */
+    .history-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
 
-    .section{
-      border:1px solid var(--border);
+    .history-card {
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.18);
       border-radius: 14px;
       padding: 14px;
-      background: rgba(0,0,0,.18);
+      transition: all .2s ease;
+      cursor: default;
+      animation: fadeIn .3s ease both;
     }
-    .section h3{
-      margin: 0 0 10px;
-      font-size: 13px;
-      text-transform:uppercase;
-      letter-spacing:.4px;
-      color: var(--muted);
+    .history-card:hover {
+      border-color: rgba(91,158,255,.22);
+      background: rgba(91,158,255,.04);
+      transform: translateY(-1px);
     }
-    .section p{ margin:0; color: var(--text); }
-    ul{
-      margin:0;
-      padding-left: 18px;
-      color: var(--text);
-    }
-    li{ margin: 6px 0; color: var(--text); }
-
-    .history-list{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      margin-top: 12px;
-    }
-    .history-card{
-      border:1px solid var(--border);
-      background: rgba(0,0,0,.16);
-      border-radius: 14px;
-      padding: 12px;
-    }
-    .history-card .meta{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      flex-wrap:wrap;
+    .history-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
       margin-bottom: 8px;
-      color: var(--muted);
-      font-size: 12px;
     }
-    .history-card .fb{
-      color: var(--text);
-      margin: 0 0 8px;
+    .history-id {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(91,158,255,.1);
+      border: 1px solid rgba(91,158,255,.2);
+      border-radius: 6px;
+      padding: 2px 7px;
+    }
+    .history-time { font-size: 11px; color: var(--muted2); }
+    .history-feedback {
       font-size: 13px;
-      line-height: 1.35;
-      opacity:.95;
+      color: var(--text);
+      margin: 0 0 6px;
+      line-height: 1.45;
+      opacity: .9;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
-    .history-card .sum{
-      margin:0;
-      color: var(--muted);
+    .history-summary {
       font-size: 12.5px;
-      line-height: 1.35;
-    }
-
-    .small{
-      font-size:12px;
       color: var(--muted);
+      line-height: 1.4;
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
-    .loader{
-      width:16px;height:16px;
-      border-radius:50%;
-      border: 2px solid rgba(255,255,255,.25);
-      border-top-color: rgba(255,255,255,.85);
-      animation: spin .8s linear infinite;
-      display:none;
+    /* ── Helper text ── */
+    .helper {
+      font-size: 12px;
+      color: var(--muted2);
+      margin-top: 12px;
+      line-height: 1.5;
     }
-    .loader.show{ display:inline-block; }
-    @keyframes spin{ to{ transform: rotate(360deg); } }
 
-    @media (max-width: 860px){
-      .grid{ grid-template-columns: 1fr; }
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 14px 0;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--muted2);
+    }
+    .empty-state svg { margin-bottom: 10px; opacity: .4; }
+    .empty-state p { font-size: 13px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.14); }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 32px 0 16px;
+      color: var(--muted2);
+      font-size: 12px;
+      animation: fadeIn 1s ease 1s both;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* ── Animations ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: flex-start; gap: 14px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="topbar">
-      <div class="brand">
-        <h1>Customer Feedback Summarizer</h1>
-        <p>Gemini AI + FastAPI + SQLite history</p>
-      </div>
-      <div class="pill">
-        <span class="dot"></span>
-        Backend: <span id="backendState">unknown</span>
-      </div>
-    </div>
 
+  <!-- Animated background -->
+  <div class="bg-canvas">
+    <div class="bg-orb"></div>
+    <div class="bg-orb"></div>
+    <div class="bg-orb"></div>
+  </div>
+
+  <div class="container">
+
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-eyebrow">
+          <span></span>AI-Powered Analytics
+        </div>
+        <h1>Customer Feedback <em>Summarizer</em></h1>
+        <p>Gemini AI · FastAPI · SQLite — Turn raw feedback into instant insights</p>
+      </div>
+      <div class="status-pill">
+        <div class="status-dot" id="statusDot"></div>
+        Backend: <strong id="backendState">checking…</strong>
+      </div>
+    </header>
+
+    <!-- Main grid -->
     <div class="grid">
-      <!-- LEFT: Input + Result -->
+
+      <!-- LEFT: Analyze -->
       <div class="card">
         <div class="card-header">
-          <h2>Analyze Feedback</h2>
-          <div class="badge">POST /summarize</div>
+          <div class="card-header-left">
+            <div class="card-icon">✦</div>
+            <h2>Analyze Feedback</h2>
+          </div>
+          <div class="endpoint-badge">POST /summarize</div>
         </div>
         <div class="card-body">
-          <textarea id="feedback" placeholder="Paste customer feedback here..."></textarea>
+
+          <div class="textarea-wrap">
+            <textarea id="feedback" placeholder="Paste customer feedback here… the longer, the richer the insights." oninput="updateChar()"></textarea>
+            <span class="char-count" id="charCount">0</span>
+          </div>
 
           <div class="actions">
-            <button class="primary" id="btnSummarize" onclick="summarize()">Summarize</button>
-            <button id="btnClear" onclick="clearAll()">Clear</button>
+            <button class="primary" id="btnSummarize" onclick="summarize(); ripple(this, event)">
+              ✦ Summarize
+            </button>
+            <button id="btnClear" onclick="clearAll(); ripple(this, event)">Clear</button>
             <span class="loader" id="loader"></span>
-            <span class="small" id="hint"></span>
+            <span class="hint-text" id="hint"></span>
           </div>
 
           <div id="status" class="status"></div>
@@ -329,17 +644,14 @@
               <h3>Summary</h3>
               <p id="rSummary">—</p>
             </div>
-
             <div class="section">
               <h3>Sentiment</h3>
               <span id="rSentiment" class="sentiment neutral">—</span>
             </div>
-
             <div class="section">
               <h3>Key Issues</h3>
               <ul id="rIssues"></ul>
             </div>
-
             <div class="section">
               <h3>Actionable Suggestions</h3>
               <ul id="rSuggestions"></ul>
@@ -347,7 +659,7 @@
           </div>
 
           <p class="helper">
-            Tip: Try long feedback (multi-line). After summarize, history auto-refresh ho jayegi.
+            Tip: Paste multi-line feedback for deeper analysis. History updates automatically after each request.
           </p>
         </div>
       </div>
@@ -355,191 +667,228 @@
       <!-- RIGHT: History -->
       <div class="card">
         <div class="card-header">
-          <h2>History</h2>
-          <div class="badge">GET /history</div>
+          <div class="card-header-left">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(124,92,255,.18), rgba(46,204,113,.12)); border-color: rgba(124,92,255,.2);">◈</div>
+            <h2>History</h2>
+          </div>
+          <div class="endpoint-badge" style="color: #b49eff; background: rgba(124,92,255,.1);">GET /history</div>
         </div>
         <div class="card-body">
           <div class="actions" style="margin-top:0;">
-            <button id="btnHistory" onclick="loadHistory()">Load History</button>
-            <button onclick="toggleHistory()">Show/Hide</button>
+            <button id="btnHistory" onclick="loadHistory(); ripple(this, event)">Load History</button>
+            <button onclick="toggleHistory(); ripple(this, event)">Show / Hide</button>
           </div>
 
-          <div id="historyWrap" style="margin-top:12px;">
-            <div id="historyStatus" class="status show">Click “Load History” to fetch last 10 items.</div>
+          <div id="historyWrap">
+            <div id="historyStatus" class="status show">
+              <span class="status-icon">◈</span>
+              Click "Load History" to fetch last 10 items.
+            </div>
             <div id="history" class="history-list"></div>
           </div>
 
           <p class="helper">Shows last 10 requests saved in SQLite (feedback.db).</p>
         </div>
       </div>
-    </div>
-  </div>
+
+    </div><!-- /grid -->
+
+    <footer>
+      Built with FastAPI · Gemini AI · SQLite &nbsp;·&nbsp; <a href="#">View API Docs →</a>
+    </footer>
+
+  </div><!-- /container -->
 
   <script>
     const API_BASE = "http://127.0.0.1:8000";
 
-    function setLoading(isLoading){
-      document.getElementById("btnSummarize").disabled = isLoading;
-      document.getElementById("btnHistory").disabled = isLoading;
-      document.getElementById("loader").classList.toggle("show", isLoading);
-      document.getElementById("hint").textContent = isLoading ? "Working..." : "";
+    /* ── Char counter ── */
+    function updateChar() {
+      const len = document.getElementById("feedback").value.length;
+      const el = document.getElementById("charCount");
+      el.textContent = len;
+      el.style.color = len > 2000 ? "var(--warning)" : "var(--muted2)";
     }
 
-    function showStatus(msg, type=""){
+    /* ── Ripple ── */
+    function ripple(btn, e) {
+      const r = document.createElement("span");
+      r.className = "ripple-effect";
+      const rect = btn.getBoundingClientRect();
+      r.style.left = (e.clientX - rect.left - 40) + "px";
+      r.style.top  = (e.clientY - rect.top  - 40) + "px";
+      btn.appendChild(r);
+      setTimeout(() => r.remove(), 600);
+    }
+
+    /* ── Loading state ── */
+    function setLoading(v) {
+      document.getElementById("btnSummarize").disabled = v;
+      document.getElementById("btnHistory").disabled   = v;
+      document.getElementById("loader").classList.toggle("show", v);
+      document.getElementById("hint").textContent = v ? "Analyzing…" : "";
+    }
+
+    /* ── Status messages ── */
+    function showStatus(msg, type = "", icon = "") {
       const el = document.getElementById("status");
-      el.className = "status show" + (type ? (" " + type) : "");
-      el.textContent = msg;
+      el.className = "status show" + (type ? " " + type : "");
+      el.innerHTML = (icon ? `<span class="status-icon">${icon}</span>` : "") + escapeHtml(msg);
     }
-
-    function hideStatus(){
+    function hideStatus() {
       const el = document.getElementById("status");
       el.className = "status";
       el.textContent = "";
     }
 
-    function sentimentClass(s){
-      const v = (s||"").toLowerCase();
-      if(v.includes("pos")) return "positive";
-      if(v.includes("neg")) return "negative";
+    /* ── Sentiment ── */
+    function sentimentClass(s) {
+      const v = (s || "").toLowerCase();
+      if (v.includes("pos")) return "positive";
+      if (v.includes("neg")) return "negative";
       return "neutral";
     }
 
-    function renderList(elId, items){
-      const el = document.getElementById(elId);
-      el.innerHTML = (items || []).map(x => `<li>${escapeHtml(x)}</li>`).join("");
+    /* ── Render lists ── */
+    function renderList(id, items) {
+      document.getElementById(id).innerHTML =
+        (items || []).map(x => `<li>${escapeHtml(x)}</li>`).join("");
     }
 
-    function escapeHtml(str){
+    /* ── Escape HTML ── */
+    function escapeHtml(str) {
       return String(str)
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
-    function clearAll(){
+    /* ── Clear ── */
+    function clearAll() {
       document.getElementById("feedback").value = "";
+      updateChar();
       hideStatus();
       document.getElementById("result").classList.remove("show");
       document.getElementById("rSummary").textContent = "—";
-      document.getElementById("rSentiment").textContent = "—";
-      document.getElementById("rSentiment").className = "sentiment neutral";
+      const sEl = document.getElementById("rSentiment");
+      sEl.textContent = "—";
+      sEl.className = "sentiment neutral";
       document.getElementById("rIssues").innerHTML = "";
       document.getElementById("rSuggestions").innerHTML = "";
     }
 
-    async function checkBackend(){
-      try{
+    /* ── Backend health check ── */
+    async function checkBackend() {
+      const dot   = document.getElementById("statusDot");
+      const label = document.getElementById("backendState");
+      try {
         const res = await fetch(`${API_BASE}/`);
-        if(!res.ok) throw new Error("bad");
-        document.getElementById("backendState").textContent = "online";
-      }catch(e){
-        document.getElementById("backendState").textContent = "offline";
+        if (!res.ok) throw new Error();
+        dot.className   = "status-dot online";
+        label.textContent = "online";
+      } catch {
+        dot.className   = "status-dot offline";
+        label.textContent = "offline";
       }
     }
 
+    /* ── Summarize ── */
     async function summarize() {
       const text = document.getElementById("feedback").value.trim();
       if (!text) {
-        showStatus("Feedback likh bhai 😄", "error");
+        showStatus("Feedback likh bhai 😄 — field empty hai.", "error", "✕");
         return;
       }
-
       hideStatus();
       setLoading(true);
-
-      try{
+      try {
         const res = await fetch(`${API_BASE}/summarize`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text })
         });
-
-        if(!res.ok){
+        if (!res.ok) {
           const errTxt = await res.text();
           throw new Error(errTxt || `HTTP ${res.status}`);
         }
-
         const data = await res.json();
         const r = data.result || {};
 
         document.getElementById("rSummary").textContent = r.summary || "—";
 
-        const s = r.sentiment || "Neutral";
-        const sEl = document.getElementById("rSentiment");
+        const s    = r.sentiment || "Neutral";
+        const sEl  = document.getElementById("rSentiment");
         sEl.textContent = s;
-        sEl.className = "sentiment " + sentimentClass(s);
+        sEl.className   = "sentiment " + sentimentClass(s);
 
-        renderList("rIssues", r.key_issues || []);
-        renderList("rSuggestions", r.actionable_suggestions || []);
+        renderList("rIssues",       r.key_issues            || []);
+        renderList("rSuggestions",  r.actionable_suggestions || []);
 
         document.getElementById("result").classList.add("show");
-        showStatus("Done ✅ Saved to history.", "ok");
-
-        // Auto refresh history
+        showStatus("Analysis complete — saved to history ✓", "ok", "✓");
         await loadHistory(true);
-
-      }catch(e){
-        showStatus("Error: " + e.message, "error");
-      }finally{
+      } catch(e) {
+        showStatus("Error: " + e.message, "error", "✕");
+      } finally {
         setLoading(false);
       }
     }
 
-    async function loadHistory(silent=false){
-      const historyDiv = document.getElementById("history");
-      const hs = document.getElementById("historyStatus");
-
-      if(!silent){
-        hs.className = "status show";
-        hs.textContent = "Loading history...";
+    /* ── Load history ── */
+    async function loadHistory(silent = false) {
+      const histDiv = document.getElementById("history");
+      const hs      = document.getElementById("historyStatus");
+      if (!silent) {
+        hs.className   = "status show";
+        hs.innerHTML   = '<span class="status-icon">◈</span> Loading history…';
       }
-
-      try{
-        const res = await fetch(`${API_BASE}/history?limit=10`);
-        if(!res.ok) throw new Error(`HTTP ${res.status}`);
-
+      try {
+        const res  = await fetch(`${API_BASE}/history?limit=10`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
-        if(!data || data.length === 0){
+        if (!data || data.length === 0) {
           hs.className = "status show";
-          hs.textContent = "No history yet. Summarize something first.";
-          historyDiv.innerHTML = "";
+          hs.innerHTML = '<span class="status-icon">◈</span> No history yet — summarize something first.';
+          histDiv.innerHTML = "";
           return;
         }
 
-        hs.className = "status";
+        hs.className  = "status";
         hs.textContent = "";
 
-        historyDiv.innerHTML = data.map(item => {
+        histDiv.innerHTML = data.map(item => {
           const sent = item?.result?.sentiment || "Neutral";
-          const cls = sentimentClass(sent);
+          const cls  = sentimentClass(sent);
           return `
             <div class="history-card">
-              <div class="meta">
-                <span><b>#${item.id}</b> · <span class="sentiment ${cls}">${escapeHtml(sent)}</span></span>
-                <span>${escapeHtml(item.created_at || "")}</span>
+              <div class="history-meta">
+                <span style="display:flex;align-items:center;gap:8px;">
+                  <span class="history-id">#${item.id}</span>
+                  <span class="sentiment ${cls}" style="font-size:11px;padding:3px 10px;">${escapeHtml(sent)}</span>
+                </span>
+                <span class="history-time">${escapeHtml(item.created_at || "")}</span>
               </div>
-              <p class="fb"><b>Feedback:</b> ${escapeHtml(item.feedback || "")}</p>
-              <p class="sum"><b>Summary:</b> ${escapeHtml(item?.result?.summary || "")}</p>
-            </div>
-          `;
+              <p class="history-feedback"><strong>Feedback:</strong> ${escapeHtml(item.feedback || "")}</p>
+              <p class="history-summary"><strong>Summary:</strong> ${escapeHtml(item?.result?.summary || "")}</p>
+            </div>`;
         }).join("");
-
-      }catch(e){
+      } catch(e) {
         hs.className = "status show error";
-        hs.textContent = "History load failed: " + e.message;
-        historyDiv.innerHTML = "";
+        hs.innerHTML = `<span class="status-icon">✕</span> History load failed: ${escapeHtml(e.message)}`;
+        histDiv.innerHTML = "";
       }
     }
 
-    function toggleHistory(){
+    /* ── Toggle history ── */
+    function toggleHistory() {
       const wrap = document.getElementById("historyWrap");
-      wrap.style.display = (wrap.style.display === "none") ? "block" : "none";
+      wrap.style.display = wrap.style.display === "none" ? "block" : "none";
     }
 
-    // on load
+    /* ── Init ── */
     checkBackend();
   </script>
 </body>
